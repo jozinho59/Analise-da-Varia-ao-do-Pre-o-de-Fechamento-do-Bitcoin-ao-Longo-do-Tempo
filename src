@@ -1,0 +1,81 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import requests
+from io import StringIO
+
+# Função para ler o arquivo CSV diretamente do Google Drive
+def read_csv_from_google_drive(file_id):
+    url = f"https://drive.google.com/uc?id={file_id}"
+    response = requests.get(url)
+    csv_raw = StringIO(response.text)
+    return pd.read_csv(csv_raw)
+
+# Leitura do arquivo CSV
+file_id = "1aJmF3UUW59s3oL3saqi3W9csnYUYs4O4"
+df = read_csv_from_google_drive(file_id)
+
+# Conversão da coluna 'Date' para o tipo datetime
+df['Date'] = pd.to_datetime(df['Date'])
+
+# Relatório de análise
+report = """
+Relatório de Análise de Dados do BTC-USD:
+
+1. Estatísticas Descritivas:
+{statistics}
+
+2. Visualizações Gráficas:
+""".format(statistics=df.describe().to_string())
+
+# Histograma dos preços de fechamento (Close)
+plt.figure(figsize=(10, 6))
+sns.histplot(df['Close'], bins=30, kde=True)
+plt.xlabel('Preço de Fechamento (USD)')
+plt.ylabel('Frequência')
+plt.title('Histograma dos Preços de Fechamento do BTC-USD')
+plt.show()
+
+# Explicação do histograma
+histogram_explanation = """
+O histograma acima mostra a distribuição dos preços de fechamento do BTC-USD. Podemos observar que a maioria dos preços de fechamento se concentra em torno de um determinado intervalo, com uma distribuição aproximadamente normal. Isso indica que os preços de fechamento do Bitcoin variam, mas há uma faixa de valores mais comum.
+"""
+
+report += histogram_explanation
+
+# Gráfico de Dispersão entre o Volume e o Preço de Fechamento
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=df, x='Volume', y='Close')
+plt.xlabel('Volume de Negociação')
+plt.ylabel('Preço de Fechamento (USD)')
+plt.title('Gráfico de Dispersão entre Volume e Preço de Fechamento do BTC-USD')
+plt.show()
+
+# Explicação do gráfico de dispersão
+scatterplot_explanation = """
+O gráfico de dispersão acima mostra a relação entre o volume de negociação e o preço de fechamento do BTC-USD. Podemos observar que, embora não haja uma correlação clara entre as duas variáveis, há momentos em que altos volumes de negociação coincidem com mudanças significativas nos preços de fechamento. Isso pode sugerir que grandes volumes de negociação estão associados a movimentos de preço importantes.
+"""
+
+report += scatterplot_explanation
+
+# Gráfico de Barras da Média Mensal dos Preços de Fechamento
+df['YearMonth'] = df['Date'].dt.to_period('M')
+monthly_avg_close = df.groupby('YearMonth')['Close'].mean().reset_index()
+
+plt.figure(figsize=(12, 6))
+sns.barplot(data=monthly_avg_close, x='YearMonth', y='Close', palette='viridis')
+plt.xlabel('Ano e Mês')
+plt.ylabel('Preço Médio de Fechamento (USD)')
+plt.title('Média Mensal dos Preços de Fechamento do BTC-USD')
+plt.xticks(rotation=45)
+plt.show()
+
+# Explicação do gráfico de barras
+barplot_explanation = """
+O gráfico de barras acima apresenta a média mensal dos preços de fechamento do BTC-USD. Podemos observar a variação dos preços ao longo do tempo, identificando períodos de alta e baixa. Este gráfico é útil para identificar tendências de longo prazo e sazonalidades no mercado de Bitcoin.
+"""
+
+report += barplot_explanation
+
+# Impressão do relatório completo
+print(report)
